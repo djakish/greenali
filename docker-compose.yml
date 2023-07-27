@@ -1,0 +1,55 @@
+version: '2'
+services:
+  rabbitmq:
+    image: 'rabbitmq:3.11-management'
+    container_name: rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=pass
+    volumes:
+      - '~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/'
+      - '~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq'
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    networks:
+      - rabbitmq_nodejs
+  m1:
+    build: ./app
+    container_name: m1
+    restart: always
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+    command:
+      - npm
+      - start
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rabbitmq_nodejs
+  m2:
+    build: ./worker
+    container_name: m2
+    restart: always
+    environment:
+      NODE_ENV: production
+    command:
+      - npm
+      - start
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rabbitmq_nodejs
+
+networks:
+  rabbitmq_nodejs:
+    driver: bridge

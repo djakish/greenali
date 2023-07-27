@@ -1,0 +1,2 @@
+POST http://localhost:3000/process?input=айдаһар
+content-type: application/json
